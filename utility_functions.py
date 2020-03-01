@@ -16,4 +16,5 @@ def not_intersection(lst1, lst2):
     lst3 -- intersection of lst1 and lst2
     '''
     lst3 = [value for value in lst1 if value not in lst2] 
+    
     return lst3 

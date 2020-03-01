@@ -22,7 +22,7 @@ def enlist_team(team_names):
     
     team_names = ','.join([str(elem) for elem in team_names])
 
-    with open('footy_teams_comps.txt', 'a') as ofile:
+    with open('footy_teams.txt', 'a') as ofile:
         ## opening the file to write/append the content in it
         ofile.write(team_names)
         ofile.write(', ') 
@@ -37,7 +37,7 @@ def preview_teams():
     Returns:
     None
     '''
-    with open('footy_teams_comps.txt', 'r') as ofile:
+    with open('footy_teams.txt', 'r') as ofile:
         ## opening the file to read the content in it
         content = ofile.readline()
         
@@ -64,9 +64,8 @@ def del_teams(del_team_names):
 
     del_team_names = [x.strip() for x in del_team_names]
 
-    with open('footy_teams_comps.txt', 'r') as ofile:
+    with open('footy_teams.txt', 'r') as ofile:
         content_team = ofile.readline()
-        content_comp = ofile.readline()
 
     team_names = content_team.split(',')
     team_names = [x.strip() for x in team_names]
@@ -86,12 +85,132 @@ def del_teams(del_team_names):
 
     end_result = ', '.join([str(elem) for elem in non_del_teams])
 
-    if end_result == '' and content_comp == '':
-        os.remove('footy_teams_comps.txt')
+    if end_result == '':
+        os.remove('footy_teams.txt')
 
     else:
-        with open('footy_teams_comps.txt', 'w') as ofile:
-            if end_result == '':
-                end_result = '\n'
+        with open('footy_teams.txt', 'w') as ofile:
             ofile.write(end_result)
-            ofile.write(content_comp)
+    
+def enlist_comp(comp_name):
+    '''
+    This function will write competition's name and respective 
+    teams into footy_comps.txt
+
+    Arguments:
+    comp_name: list of competition names
+
+    Returns:
+    None
+    '''
+
+    if 'footy_comps.txt' in  os.listdir():
+        with open('footy_comps.txt'):
+            pass
+    
+    ## HERE
+
+    for i in range(len(comp_name)):
+        comp_name[i] += ': F'
+        ## adding F to show that processing has not been done yet
+    
+    comp_name = ';'.join([str(elem) for elem in comp_name])
+    ## turning back to string
+
+    with open('footy_comps.txt', 'a') as ofile:
+        ## opening footy_comps file for appending the results
+        ofile.write(comp_name)
+        ofile.write('; ')
+
+def preview_comps():
+    '''
+    This function displays all the competitions that
+    has been saved by the user.
+
+    Arguments:
+    None
+
+    Returns:
+    None
+    '''
+    with open('footy_comps.txt', 'r') as ofile:
+        ## opening text file for reading
+        comp_content = ofile.readline()
+        ## reading the content on the first line
+    
+    comp_content = comp_content.split(';')
+
+    for comp in comp_content:
+        print(comp[:-3].strip())
+
+def del_comps(del_comp_names):
+    '''
+    This function will remove added competitions.
+
+    Arguments:
+    del_comp_names -- string, competition names in required order.
+
+    Returns:
+    None
+    '''
+
+    iterate_del_names = del_comp_names.split(';')
+    iterate_del_names = [x.strip() for x in iterate_del_names]
+
+    for comp_team in iterate_del_names:
+        
+        with open('footy_comps.txt', 'r') as ofile:
+            comp_content = ofile.readline()
+            ## reading the content from the first line
+        
+        count = 0
+        
+        for comp in comp_content.split(';'):
+            if comp.split(':')[0].strip() == comp_team.split(':')[0].strip():
+                break
+            count += 1
+        ## finding out matching teams
+
+        selected_teams_del = comp_team.split(';')[0].split(':')[1:]
+        selected_teams_del = selected_teams_del[0].split(',')
+        selected_teams_del = [x.strip() for x in selected_teams_del]
+
+        selected_teams = comp_content.split(';')[count].strip().split(':')[1]
+        selected_teams = selected_teams.split(',')
+        selected_teams = [x.strip() for x in selected_teams]
+        ## picking up the selected teams
+
+        del_final = uf.not_intersection(selected_teams, selected_teams_del)
+
+        if del_final == []:
+            temp_comp = comp_content.split(';')
+            del temp_comp[count]
+            final_result = ';'.join(str(elem) for elem in temp_comp)
+            
+        else:
+            temp_comp = comp_content.split(';')[count].split(':')[0].strip()
+            tf_value = comp_content.split(';')[count].split(':')[2].strip()
+            temp_comp += ': '
+            final_result = ''
+
+            for team in del_final:
+                temp_comp += team + ', '
+            temp_comp = temp_comp[:-2] + f': {tf_value}'
+
+            comp_temp = comp_content.split(';')
+            for i in range(len(comp_temp) - 1):
+                if i == count:
+                    final_result += ' ' + temp_comp
+                else:
+                    final_result += comp_temp[i]
+                final_result += ';'
+                
+            if final_result[0] == ' ':
+                final_result = final_result[1:]
+        
+        if final_result == '':
+            os.remove('footy_comps.txt')
+        else:
+            with open('footy_comps.txt', 'w') as ofile:
+                ofile.write(final_result)
+        
