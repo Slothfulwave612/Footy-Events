@@ -103,24 +103,78 @@ def enlist_comp(comp_name):
     Returns:
     None
     '''
-
+    
     if 'footy_comps.txt' in  os.listdir():
-        with open('footy_comps.txt'):
-            pass
-    
-    ## HERE
+        for comp_index in comp_name:
+            with open('footy_comps.txt', 'r') as ofile:
+                comp_content = ofile.readline()
+                ## reading the content of the file
 
-    for i in range(len(comp_name)):
-        comp_name[i] += ': F'
-        ## adding F to show that processing has not been done yet
-    
-    comp_name = ';'.join([str(elem) for elem in comp_name])
-    ## turning back to string
+            comp_content = comp_content.split(';')
+            comp_content = [x.strip() for x in comp_content]
+            ## making a list of all competition with the team names
+            
+            input_comp = comp_index.split(':')[0].strip()
+            ## the user input competition name
 
-    with open('footy_comps.txt', 'a') as ofile:
-        ## opening footy_comps file for appending the results
-        ofile.write(comp_name)
-        ofile.write('; ')
+            count = 0
+            ## a counter to find where the competition is in comp_content
+
+            for comp in comp_content:
+                if comp.split(':')[0].strip() == input_comp:
+                    ## if the competition name has been matched
+                    ## breaking the for loop 
+                    break
+                count += 1
+
+            if count != len(comp_content):
+                main_comp = comp_content[count].split(':')
+                main_comp = [x.strip() for x in main_comp]
+                ## a splitted list containing competiton name, team names and true false value
+
+                team_names = main_comp[1].split(',')
+                team_names = [x.strip() for x in team_names]
+                ## making a list of all team names
+
+                input_teams = comp_index.split(':')[1].split(',')
+                input_teams = [x.strip() for x in input_teams]
+                ## making a list of all team names entered by the user
+
+                for team in input_teams:
+                    if team not in team_names:
+                        team_names.append(team)
+                ## checking for whether dupicate team has been entered or not
+                
+                team_names = ', '.join(elem for elem in team_names)
+                ## converting list to string
+
+                tf_value = main_comp[2]
+                ## true_false_value of that particular competition
+
+                team_comp = main_comp[0] + ': ' + team_names + f': {tf_value}'
+                ## after appending the team name the update competiton
+
+                final_result = ''
+
+                for i in range(len(comp_content) - 1):
+                    if i == count:
+                        final_result += team_comp
+                    else:
+                        final_result += comp_content[i]
+                    final_result += '; '
+                        
+                if final_result[0] == ' ':
+                    final_result = final_result[1:]
+
+                with open('footy_comps.txt', 'w') as ofile:
+                    ofile.write(final_result)
+            
+            else:
+                comp_index = [comp_index.strip()]
+                uf.append_team(comp_index)
+
+    else:
+        uf.append_team(comp_name)
 
 def preview_comps():
     '''
