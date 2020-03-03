@@ -1,7 +1,6 @@
 '''
 utility_functions.py
 --------------------
-
 '''
 
 def not_intersection(lst1, lst2): 
@@ -20,10 +19,6 @@ def not_intersection(lst1, lst2):
     return lst3 
 
 def append_team(comp_name):
-    for i in range(len(comp_name)):
-        comp_name[i] += ': F'
-        ## adding F to show that processing has not been done yet
-    
     comp_name = ';'.join([str(elem) for elem in comp_name])
     ## turning back to string
 
@@ -31,3 +26,24 @@ def append_team(comp_name):
         ## opening footy_comps file for appending the results
         ofile.write(comp_name)
         ofile.write('; ')
+
+def find_comp(comp_content, comp_team):
+    '''
+    This function will find the competition if present in foot_comps.txt
+
+    Arguments:
+    comp_content -- the content from footy_comps.txt
+    comp_team -- the inputed teams
+
+    Returns:
+    count -- index value where that particular competition has been found
+    '''
+    count = 0
+        
+    for comp in comp_content.split(';'):
+        if comp.split(':')[0].strip() == comp_team.split(':')[0].strip():
+            ## if competition matches breaking 
+            break
+        count += 1
+    
+    return count

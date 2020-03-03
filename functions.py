@@ -17,8 +17,6 @@ def enlist_team(team_names):
     Returns:
     None
     '''
-    for i in range(len(team_names)):
-        team_names[i] += '--F'
     
     team_names = ','.join([str(elem) for elem in team_names])
 
@@ -44,12 +42,12 @@ def preview_teams():
     team_names = content.split(',')
     team_names = [x.strip() for x in team_names]
 
-    if len(team_names) == 2:
+    if len(team_names) == 1:
         i = -1
 
     for i in range(len(team_names) - 2):
-        print(team_names[i][:-3], end=', ')
-    print(team_names[i+1][:-3])
+        print(team_names[i], end=', ')
+    print(team_names[i+1])
 
 def del_teams(del_team_names):
     '''
@@ -69,19 +67,9 @@ def del_teams(del_team_names):
 
     team_names = content_team.split(',')
     team_names = [x.strip() for x in team_names]
-    temp_team_names = [x[:-3] for x in team_names]
+    temp_team_names = [x for x in team_names]
 
     non_del_teams = uf.not_intersection(temp_team_names, del_team_names)
-
-    tf_value = ''
-
-    for final_names in non_del_teams:
-        for real_names in team_names:
-            if final_names == real_names[:-3] and (final_names != '' or real_names != ''):
-                tf_value += real_names[-1]
-    
-    for i in range(len(non_del_teams) - 1):
-        non_del_teams[i] += f'--{tf_value[i]}'
 
     end_result = ', '.join([str(elem) for elem in non_del_teams])
 
@@ -144,14 +132,11 @@ def enlist_comp(comp_name):
                     if team not in team_names:
                         team_names.append(team)
                 ## checking for whether dupicate team has been entered or not
-                
+                print(team_names)
                 team_names = ', '.join(elem for elem in team_names)
                 ## converting list to string
 
-                tf_value = main_comp[2]
-                ## true_false_value of that particular competition
-
-                team_comp = main_comp[0] + ': ' + team_names + f': {tf_value}'
+                team_comp = main_comp[0] + ': ' + team_names
                 ## after appending the team name the update competiton
 
                 final_result = ''
@@ -195,7 +180,7 @@ def preview_comps():
     comp_content = comp_content.split(';')
 
     for comp in comp_content:
-        print(comp[:-3].strip())
+        print(comp.strip())
 
 def del_comps(del_comp_names):
     '''
@@ -217,54 +202,73 @@ def del_comps(del_comp_names):
             comp_content = ofile.readline()
             ## reading the content from the first line
         
-        count = 0
-        
-        for comp in comp_content.split(';'):
-            if comp.split(':')[0].strip() == comp_team.split(':')[0].strip():
-                break
-            count += 1
-        ## finding out matching teams
+        count = uf.find_comp(comp_content, comp_team)
+        ## finding the required competition in footy_comps.txt
 
+        if count >= len(comp_content.split(';')):
+            ## if wrong team has been input
+            print('Team not found')
+            continue
+        
         selected_teams_del = comp_team.split(';')[0].split(':')[1:]
         selected_teams_del = selected_teams_del[0].split(',')
         selected_teams_del = [x.strip() for x in selected_teams_del]
-
+        
         selected_teams = comp_content.split(';')[count].strip().split(':')[1]
         selected_teams = selected_teams.split(',')
         selected_teams = [x.strip() for x in selected_teams]
         ## picking up the selected teams
-
-        del_final = uf.not_intersection(selected_teams, selected_teams_del)
-
-        if del_final == []:
-            temp_comp = comp_content.split(';')
-            del temp_comp[count]
-            final_result = ';'.join(str(elem) for elem in temp_comp)
-            
-        else:
-            temp_comp = comp_content.split(';')[count].split(':')[0].strip()
-            tf_value = comp_content.split(';')[count].split(':')[2].strip()
-            temp_comp += ': '
-            final_result = ''
-
-            for team in del_final:
-                temp_comp += team + ', '
-            temp_comp = temp_comp[:-2] + f': {tf_value}'
-
-            comp_temp = comp_content.split(';')
-            for i in range(len(comp_temp) - 1):
-                if i == count:
-                    final_result += ' ' + temp_comp
-                else:
-                    final_result += comp_temp[i]
-                final_result += ';'
-                
-            if final_result[0] == ' ':
-                final_result = final_result[1:]
         
-        if final_result == '':
-            os.remove('footy_comps.txt')
-        else:
+        del_all_comp = comp_team.split(':')[1].strip()
+        
+        if del_all_comp == 'del_all':
+            count = uf.find_comp(comp_content, comp_team)
+            ## finding the required competition in footy_comps.txt
+
+            final_result = comp_content.split(';')
+            del final_result[count]
+            final_result = [x.strip() for x in final_result]
+
+            final_result = '; '.join(elem for elem in final_result)
+
             with open('footy_comps.txt', 'w') as ofile:
                 ofile.write(final_result)
+        
+        else:
+
+            del_final = uf.not_intersection(selected_teams, selected_teams_del)
+
+            if del_final == []:
+                temp_comp = comp_content.split(';')
+                del temp_comp[count]
+                final_result = ';'.join(str(elem) for elem in temp_comp)
+                print(final_result)
+
+            else:
+                temp_comp = comp_content.split(';')[count].split(':')[0].strip()
+                temp_comp += ': '
+                final_result = ''
+            
+                print(del_final)
+                
+                for team in del_final:
+                    temp_comp += team + ', '
+                temp_comp = temp_comp[:-4] 
+
+                comp_temp = comp_content.split(';')
+                for i in range(len(comp_temp) - 1):
+                    if i == count:
+                        final_result += ' ' + temp_comp
+                    else:
+                        final_result += comp_temp[i]
+                    final_result += ';'
+                    
+                if final_result[0] == ' ':
+                    final_result = final_result[1:]
+            
+            if final_result == '':
+                os.remove('footy_comps.txt')
+            else:
+                with open('footy_comps.txt', 'w') as ofile:
+                    ofile.write(final_result)
         

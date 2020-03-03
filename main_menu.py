@@ -148,12 +148,12 @@ while choice != 4:
                     ## format(to remove comp)  -- compitition name: all
                     ## to remove all competition write del_all
 
-                    if del_comp_names[0] == 'del_all':
-                        os.remove('footy_teams.txt')
+                    if del_comp_names == 'del_all':
+                        os.remove('footy_comps.txt')
                     else:
                         functions.del_comps(del_comp_names)
                 else:
-                    print('Please Add A Team First')
+                    print('Please Add A Competition First')
 
 
     elif choice == 3:
