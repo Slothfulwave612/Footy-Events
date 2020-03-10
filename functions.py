@@ -4,8 +4,15 @@ functions.py
 
 '''
 
+import requests
+from bs4 import BeautifulSoup
+import re
+from datetime import datetime, timedelta
+import pickle
 import os
 import utility_functions as uf
+
+scopes = ['https://www.googleapis.com/auth/calendar']
 
 def enlist_team(team_names):
     '''
@@ -41,8 +48,7 @@ def preview_teams():
         
     team_names = content.split(',')
     team_names = [x.strip() for x in team_names]
-
-    if len(team_names) == 1:
+    if len(team_names) - 1 == 1:
         i = -1
 
     for i in range(len(team_names) - 2):
@@ -271,4 +277,334 @@ def del_comps(del_comp_names):
             else:
                 with open('footy_comps.txt', 'w') as ofile:
                     ofile.write(final_result)
+
+def scrape_write(user_name, team_content, month_name, timezone):
+    for team in team_content:
+        print(f'For Team {team}')
+
+        search_term = f'{team} sky sports fixtures'
+
+        print('\nGetting The Link of the website...\n')
+
+        ## accessing the link of the website
+        website_link = uf.Google.search(search_term)[0].split('&')[0]
+
+        print(f'\nScrapping data for {team} from the website...\n')
+        print(website_link)
+
+        ## scraping the content from the website
+        scrape_data = requests.get(website_link)
+        soup = BeautifulSoup(scrape_data.text, 'html.parser')
+
+        ## finding the div tag which contains all fixture's information
+        results = soup.find('div', attrs={'class': 'fixres__body'})
         
+        ## scrapping fixuture's date, competition name, team names and timing of the fixtures
+        years = results.find_all('h3')
+        fix_date = results.find_all('h4')
+        comp_name = results.find_all('h5')
+        teams = results.find_all('span', attrs={'class': 'swap-text__target'})
+        timings = results.find_all('span', attrs={'class': 'matches__date'})
+
+        ## making a dict of all years
+        year_dict = {}
+
+        for year in years:
+            year_temp = year.text.split(' ')
+            year_dict[year_temp[0]] = year_temp[1]
+
+        ## making a list of all dates
+        date_text = []
+
+        for date in fix_date:
+            temp = date.text.split(' ')
+
+            date_final =''
+
+            for i in temp[1]:
+                if i.isdigit():
+                    date_final += i
+                else:
+                    break
+
+            year = year_dict[temp[2]]
+            month = month_name[temp[2]]
+
+            date_text.append(f'{date_final} {str(month)} {year}')
+
+        ## making a list of all competition names
+        comp_text = []
+
+        for comp in comp_name:
+            comp_text.append(comp.text)
+
+        ## making a list of match times
+        match_time = []
+
+        for time in timings:
+            match_time.append(time.text.strip())
+
+        final_time = []
+
+        for date_x, time_y in zip(date_text, match_time):
+            date_split = date_x.split(' ')
+            date_split = [int(elem) for elem in date_split]
+            time_split = time_y.split(':')
+            time_split = [int(elem) for elem in time_split]
+            temp_time = datetime(date_split[2], date_split[1], date_split[0], time_split[0], time_split[1], 0)
+            temp_time = temp_time + timedelta(hours=4)
+            final_time.append(temp_time)
+
+        ## making a dictionary that will contain all information
+
+        final_record = dict()
+        home_team = []
+        away_team = []
+
+        count = 1
+
+        for x_temp in teams:
+            if x_temp.text == '\n\n\n\n':
+                continue
+
+            elif count % 2 != 0:
+                home_team.append(x_temp.text)
+            else:
+                away_team.append(x_temp.text)
+            count += 1
+
+        for i in range(len(match_time)):
+            final_record['Date/Time'] = final_time
+            final_record['Competition'] = comp_text
+
+        final_record['Home_Team'] = home_team
+        final_record['Away_Team'] = away_team
+
+        print('\nScrapped Successfully')
+
+        service, calendar_id = uf.load_calendar(user_name, scopes)
+
+        result = service.events().list(calendarId=calendar_id, timeZone=timezone, maxResults=9999).execute()
+        summary = []
+        desc = []
+        start_time = []
+        result_dict = {}
+
+        for item in range(len(result['items'])):
+            temp = result['items'][item]['summary'].split(' ')[-1]
+            if temp == '(Football)':
+                summary.append(result['items'][item]['summary'])
+                desc.append(result['items'][item]['description'])
+                date_temp = result['items'][item]['start']['dateTime']
+                start_time.append(date_temp)
+
+        result_dict['Summary'] = summary
+        result_dict['Description'] = desc
+        result_dict['start_time'] = start_time
+
+        for i in range(len(final_record['Home_Team'])):
+            temp_list = []
+
+            for index in final_record:
+                temp_list.append(final_record[index][i])
+
+            start_time = temp_list[0]
+            start_time = start_time.strftime("%Y-%m-%dT%H:%M:%S")
+            desc = temp_list[1]
+            summary = f'{temp_list[2]} vs {temp_list[3]} (Football)'
+            count = False
+            for j in range(len(result_dict['Summary'])):
+                if summary == result_dict['Summary'][j] and desc == result_dict['Description'][j]:
+                    if start_time != result_dict['start_time'][j][:-6]:
+                        print(f'Updating Event: {summary}')
+                        count = True
+                        index = uf.update_event(result, summary)
+                        event_id = result['items'][index]['id']
+                        event = uf.up_event_struct(start_time, timezone)
+                        up_e = service.events().patch(calendarId=calendar_id, eventId=event_id, body=event).execute()
+                        print('Event Updated Successfully')
+                        print()
+                        break
+                    else:
+                        count = True
+                        break
+            if count == False:
+                print(f'Adding Event: {summary}')
+                event = uf.even_struct(summary, desc, start_time, timezone)
+                service.events().insert(calendarId=calendar_id, body=event).execute()
+        print()
+
+def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, count_c=0):
+    for comp in comp_name:
+        print(f'For Competition {comp}')
+
+        search_term = f'{comp} sky sports fixtures'
+
+        print('\nGetting The Link of the website...\n')
+
+        ## accessing the link of the website
+        website_link = uf.Google.search(search_term)[0].split('&')[0]
+        temp_team = team_name[count_c]
+        
+        print(f'\nScrapping data for {comp}: {temp_team} from the website...\n')
+        print(website_link)
+
+        ## scraping the content from the website
+        scrape_data = requests.get(website_link)
+        soup = BeautifulSoup(scrape_data.text, 'html.parser')
+
+        ## finding the div tag which contains all fixture's information
+        results = soup.find('div', attrs={'class': 'fixres__body'})
+        
+        ## scrapping fixuture's date, competition name, team names and timing of the fixtures
+        years = results.find_all('h3')
+        fix_date = results.find_all('h4')
+        teams = results.find_all('span', attrs={'class': 'swap-text__target'})
+        timings = results.find_all('span', attrs={'class': 'matches__date'})
+        
+        results = str(results)
+        real_dates = []
+        
+        for i in range(len(fix_date)-1):
+            start = results.find(str(fix_date[i]))
+            end = results.find(str(fix_date[i+1]))
+            temp = results[start:end].count('<div class="fixres__item">')
+            for j in range(temp):
+                real_dates.append(fix_date[i])
+        
+        start = results.find(fix_date[i+1].text)
+        temp = results[start:].count('<div class="fixres__item">')
+        for j in range(temp):
+                real_dates.append(fix_date[i+1])
+        
+        ## making a dict of all years
+        year_dict = {}
+
+        for year in years:
+            year_temp = year.text.split(' ')
+            year_dict[year_temp[0]] = year_temp[1]
+
+        ## making a list of all dates
+        date_text = []
+
+        for date in real_dates:
+            temp = date.text.split(' ')
+
+            date_final =''
+
+            for i in temp[1]:
+                if i.isdigit():
+                    date_final += i
+                else:
+                    break
+
+            year = year_dict[temp[2]]
+            month = month_name[temp[2]]
+
+            date_text.append(f'{date_final} {str(month)} {year}')
+
+        ## making a list of match times
+        match_time = []
+
+        for time in timings:
+            match_time.append(time.text.strip())
+
+        temp_time_2 = []
+
+        for date_x, time_y in zip(date_text, match_time):
+            date_split = date_x.split(' ')
+            date_split = [int(elem) for elem in date_split]
+            time_split = time_y.split(':')
+            time_split = [int(elem) for elem in time_split]
+            temp_time = datetime(date_split[2], date_split[1], date_split[0], time_split[0], time_split[1], 0)
+            temp_time = temp_time + timedelta(hours=4)
+            temp_time_2.append(temp_time)
+
+        ## making a dictionary that will contain all information
+
+        final_record = dict()
+        home_team = []
+        away_team = []
+
+        count = 1
+
+        for x_temp in teams:
+            if x_temp.text == '\n\n\n\n':
+                continue
+
+            elif count % 2 != 0:
+                home_team.append(x_temp.text)
+            elif count % 2 == 0:
+                away_team.append(x_temp.text)
+            count += 1
+        
+        final_home = []
+        final_away = []
+        final_time = []
+        
+        for x, y, z in zip(home_team, away_team, temp_time_2):
+            if x in temp_team or y in temp_team:
+                final_home.append(x)
+                final_away.append(y)
+                final_time.append(z)
+
+        for i in range(len(match_time)):
+            final_record['Date/Time'] = final_time
+
+        final_record['Home_Team'] = final_home
+        final_record['Away_Team'] = final_away
+
+        print('\nScrapped Successfully')
+        count_c += 1
+        
+        service, calendar_id = uf.load_calendar(user_name, scopes)
+
+        result = service.events().list(calendarId=calendar_id, timeZone=timezone, maxResults=9999).execute()
+        summary = []
+        desc = []
+        start_time = []
+        result_dict = {}
+
+        for item in range(len(result['items'])):
+            temp = result['items'][item]['summary'].split(' ')[-1]
+            if temp == '(Football)':
+                summary.append(result['items'][item]['summary'])
+                desc.append(result['items'][item]['description'])
+                date_temp = result['items'][item]['start']['dateTime']
+                start_time.append(date_temp)
+
+        result_dict['Summary'] = summary
+        result_dict['Description'] = desc
+        result_dict['start_time'] = start_time
+
+        for i in range(len(final_record['Home_Team'])):
+            temp_list = []
+
+            for index in final_record:
+                temp_list.append(final_record[index][i])
+
+            start_time = temp_list[0]
+            start_time = start_time.strftime("%Y-%m-%dT%H:%M:%S")
+            desc = comp
+            summary = f'{temp_list[1]} vs {temp_list[2]} (Football)'
+            count = False
+            for j in range(len(result_dict['Summary'])):
+                if summary == result_dict['Summary'][j] and desc == result_dict['Description'][j]:
+                    if start_time != result_dict['start_time'][j][:-6]:
+                        print(f'Updating Event: {summary}')
+                        count = True
+                        index = uf.update_event(result, summary)
+                        event_id = result['items'][index]['id']
+                        event = uf.up_event_struct(start_time, timezone)
+                        up_e = service.events().patch(calendarId=calendar_id, eventId=event_id, body=event).execute()
+                        print('Event Updated Successfully')
+                        print()
+                        break
+                    else:
+                        count = True
+                        break
+            if count == False:
+                print(f'Adding Event: {summary}')
+                event = uf.even_struct(summary, desc, start_time, timezone)
+                service.events().insert(calendarId=calendar_id, body=event).execute()
+        print()
