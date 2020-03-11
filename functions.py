@@ -5,14 +5,14 @@ functions.py
 '''
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime, timedelta
 import pickle
 import os
 import utility_functions as uf
-
-scopes = ['https://www.googleapis.com/auth/calendar']
 
 def enlist_team(team_names):
     '''
@@ -278,7 +278,7 @@ def del_comps(del_comp_names):
                 with open('footy_comps.txt', 'w') as ofile:
                     ofile.write(final_result)
 
-def scrape_write(user_name, team_content, month_name, timezone):
+def scrape_write(user_name, team_content, month_name, timezone, service, calendar_id):
     for team in team_content:
         print(f'For Team {team}')
 
@@ -293,7 +293,18 @@ def scrape_write(user_name, team_content, month_name, timezone):
         print(website_link)
 
         ## scraping the content from the website
-        scrape_data = requests.get(website_link)
+        try:
+            scrape_data = requests.get(website_link)
+        except Exception:
+            print('Taking Some Time\n')
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+
+            scrape_data = session.get(website_link)
+            
         soup = BeautifulSoup(scrape_data.text, 'html.parser')
 
         ## finding the div tag which contains all fixture's information
@@ -336,7 +347,7 @@ def scrape_write(user_name, team_content, month_name, timezone):
         comp_text = []
 
         for comp in comp_name:
-            comp_text.append(comp.text)
+            comp_text.append(comp.text.lower())
 
         ## making a list of match times
         match_time = []
@@ -368,9 +379,9 @@ def scrape_write(user_name, team_content, month_name, timezone):
                 continue
 
             elif count % 2 != 0:
-                home_team.append(x_temp.text)
+                home_team.append(x_temp.text.lower())
             else:
-                away_team.append(x_temp.text)
+                away_team.append(x_temp.text.lower())
             count += 1
 
         for i in range(len(match_time)):
@@ -381,8 +392,6 @@ def scrape_write(user_name, team_content, month_name, timezone):
         final_record['Away_Team'] = away_team
 
         print('\nScrapped Successfully')
-
-        service, calendar_id = uf.load_calendar(user_name, scopes)
 
         result = service.events().list(calendarId=calendar_id, timeZone=timezone, maxResults=9999).execute()
         summary = []
@@ -434,7 +443,7 @@ def scrape_write(user_name, team_content, month_name, timezone):
                 service.events().insert(calendarId=calendar_id, body=event).execute()
         print()
 
-def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, count_c=0):
+def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, service, calendar_id, count_c=0):
     for comp in comp_name:
         print(f'For Competition {comp}')
 
@@ -450,7 +459,18 @@ def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, cou
         print(website_link)
 
         ## scraping the content from the website
-        scrape_data = requests.get(website_link)
+        try:
+            scrape_data = requests.get(website_link)
+        except Exception:
+            print('Taking Some Time\n')
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+
+            scrape_data = session.get(website_link)
+            
         soup = BeautifulSoup(scrape_data.text, 'html.parser')
 
         ## finding the div tag which contains all fixture's information
@@ -541,23 +561,29 @@ def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, cou
         final_home = []
         final_away = []
         final_time = []
-        
-        for x, y, z in zip(home_team, away_team, temp_time_2):
-            if x in temp_team or y in temp_team:
-                final_home.append(x)
-                final_away.append(y)
-                final_time.append(z)
 
-        for i in range(len(match_time)):
-            final_record['Date/Time'] = final_time
+        if temp_team != 'all':
+            for x, y, z in zip(home_team, away_team, temp_time_2):
+                if x.lower() in temp_team or y.lower() in temp_team:
+                    final_home.append(x.lower())
+                    final_away.append(y.lower())
+                    final_time.append(z)
 
-        final_record['Home_Team'] = final_home
-        final_record['Away_Team'] = final_away
+            for i in range(len(match_time)):
+                final_record['Date/Time'] = final_time
+
+            final_record['Home_Team'] = final_home
+            final_record['Away_Team'] = final_away
+
+        else:
+            for i in range(len(match_time)):
+                final_record['Date/Time'] = temp_time_2
+
+            final_record['Home_Team'] = home_team
+            final_record['Away_Team'] = away_team
 
         print('\nScrapped Successfully')
         count_c += 1
-        
-        service, calendar_id = uf.load_calendar(user_name, scopes)
 
         result = service.events().list(calendarId=calendar_id, timeZone=timezone, maxResults=9999).execute()
         summary = []
@@ -576,18 +602,22 @@ def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, cou
         result_dict['Summary'] = summary
         result_dict['Description'] = desc
         result_dict['start_time'] = start_time
+        
+        t_count = 0
 
         for i in range(len(final_record['Home_Team'])):
             temp_list = []
 
             for index in final_record:
-                temp_list.append(final_record[index][i])
-
-            start_time = temp_list[0]
+                temp_list.append(final_record[index])
+        
+            start_time = temp_list[0][t_count]
+            
             start_time = start_time.strftime("%Y-%m-%dT%H:%M:%S")
             desc = comp
-            summary = f'{temp_list[1]} vs {temp_list[2]} (Football)'
+            summary = f'{temp_list[1][t_count]} vs {temp_list[2][t_count]} (Football)'
             count = False
+            
             for j in range(len(result_dict['Summary'])):
                 if summary == result_dict['Summary'][j] and desc == result_dict['Description'][j]:
                     if start_time != result_dict['start_time'][j][:-6]:
@@ -607,4 +637,5 @@ def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, cou
                 print(f'Adding Event: {summary}')
                 event = uf.even_struct(summary, desc, start_time, timezone)
                 service.events().insert(calendarId=calendar_id, body=event).execute()
+            t_count += 1
         print()

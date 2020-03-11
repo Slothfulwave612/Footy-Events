@@ -30,6 +30,7 @@ month_name = {
       }
 
 timezone = 'Asia/Kolkata'
+scopes = ['https://www.googleapis.com/auth/calendar']
 
 while choice != 4:
 
@@ -179,14 +180,16 @@ while choice != 4:
 
     elif choice == 3:
         ## Run The Process
-        user_name = input('Enter your username:- ').lower()
+        user_name = input('\nEnter your username:- ').lower()
+
+        service, calendar_id = uf.load_calendar(user_name, scopes)
 
         print('\n---Instructions For Running or Updating Selected Teams or Competitions---')
         print('1. Enter TR if you want to Run Process for teams.')
         print('2. Enter CR if you want to Run Process for competitions.')
         print('3. Enter TCR if you want to Run Process for both teams and competitions.')
         print('4. Enter TU if you want to update selected teams.')
-        print('5. Enter CU if you want to update selected competitions.')
+        print('5. Enter CU if you want to update selected 2competitions.')
         print('6. Enter TCU if you want to update selected teams as well as competitions.')
         print('7. Enter exit if you want to exit out.')
         print('-------------------------------------------------------------------------')
@@ -199,47 +202,66 @@ while choice != 4:
 
             if sel_choice == 'tr' or sel_choice == 'tcr':
                 ## Run Process for teams
-                team_content = uf.team_names()
-                functions.scrape_write(user_name, team_content, month_name, timezone)
+                if 'footy_teams.txt' in os .listdir():
+                    team_content = uf.team_names()
+                    functions.scrape_write(user_name, team_content, month_name, timezone, service, calendar_id)
+
+                    if sel_choice == 'tr':
+                        break
+                else:
+                    print('footy_teams.txt not found')
+                    break
             
             if sel_choice == 'cr' or sel_choice == 'tcr':
                 ## Run Process for competitions
-                comp_content = uf.comp_names()
-                comp_name = [elem.split(':')[0] for elem in comp_content][:-1]
-                team_name = []
-                for team in comp_content[:-1]:
-                    temp = team.split(':')[1]
-                    team_name.append(temp.strip())    
-                functions.scrape_write_comp(user_name, comp_name, team_name, month_name, timezone)
+                if 'footy_comps.txt' in os.listdir():
+                    comp_content = uf.comp_names()
+                    comp_name = [elem.split(':')[0] for elem in comp_content][:-1]
+                    team_name = []
+                    for team in comp_content[:-1]:
+                        temp = team.split(':')[1]
+                        team_name.append(temp.strip())    
+                    functions.scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, service, calendar_id)
+                    if sel_choice == 'cr' or sel_choice == 'tcr':
+                        break
+                else:
+                    print('footy_comps.txt not found')
+                    break
 
             if sel_choice == 'tu' or sel_choice == 'tcu':
                 ## Update selected teams
-                up_teams = input('Enter Team Names:- ').lower()
+                if 'footy_teams.txt' in os.listdir():
+                    up_teams = input('Enter Team Names:- ').lower()
 
-                orig_team = uf.team_names()
-                team_content = up_teams.split(',')
-                team_content = [elem.strip() for elem in team_content]
-                team_content = [elem for elem in team_content if elem in orig_team]
-                functions.scrape_write(user_name, team_content, month_name, timezone)
+                    orig_team = uf.team_names()
+                    team_content = up_teams.split(',')
+                    team_content = [elem.strip() for elem in team_content]
+                    team_content = [elem for elem in team_content if elem in orig_team]
+                    functions.scrape_write(user_name, team_content, month_name, timezone, service, calendar_id)
+                    if sel_choice == 'tu':
+                        break
+                else:
+                    print('footy_teams.txt not found')
+                    break
         
-            if sel_choice == 'cu' or sel_choice == 'tcr':
+            if sel_choice == 'cu' or sel_choice == 'tcu':
                 ## Update selected competitions
-                up_comp = input('Enter Competition\'s Detail:- ').lower()
+                if 'footy_comps.txt' in os.listdir():
+                    up_comp = input('Enter Competition\'s Detail:- ').lower()
 
-                comp_content = up_comp.split(';')
-                comp_content = [elem.strip() for elem in comp_content]
-                comp_name = [elem.split(':')[0] for elem in comp_content]
-                team_name = []
-                for team in comp_content:
-                    temp = team.split(':')[1]
-                    team_name.append(temp.strip())
-                functions.scrape_write_comp(user_name, comp_name, team_name, month_name, timezone)
-                
-            elif sel_choice == 'exit':
-                break
-                
-            else:
-                print('Invalid Input')
+                    comp_content = up_comp.split(';')
+                    comp_content = [elem.strip() for elem in comp_content]
+                    comp_name = [elem.split(':')[0] for elem in comp_content]
+                    team_name = []
+                    for team in comp_content:
+                        temp = team.split(':')[1]
+                        team_name.append(temp.strip())
+                    functions.scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, service, calendar_id)
+                    if sel_choice == 'cu' or sel_choice == 'tcu':
+                        break
+                else:
+                    print('footy_comps.txt not found')
+                    break
 
     elif choice < 1 or choice > 4:
         print('Invalid Input')
