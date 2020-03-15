@@ -1,9 +1,34 @@
 '''
 functions.py
 ------------
+This Python module contains all the main functions used for doing 
+all the basic tasks in this project namely from adding teams or competition 
+to scrapping the content from website, adding and updating events in the calendar.
 
+Modules Imported(7):
+--------------------
+1. requests: requests is a Python HTTP library, makes HTTP requests simpler and more human-friendly. 
+2. BeautifulSoup: for parsing HTML and XML documents.
+3. re: to use Python's raw string notation for regular expression patterns.
+4. datetime: supplies classes for manipulating dates and times.
+5. used for serializing and de-serializing a Python object structure.
+6. os: provides functions for interacting with the operating system.
+7. utility_funtions: python file which contains all the helper functions.
+
+Functions Defined(8):
+--------------------
+1. enlist_team: this function will write the team name/s into the text files.
+2. preview_teams: this function will display all the added teams.
+3. del_teams: this function will delete the team names specified from team name file.
+4. enlist_comp: this function will write competition's name and respective teams into footy_comps.txt.
+5. preview_comps: this function displays all the competitions that has been saved by the user.
+6. del_comps: this function will remove added competitions.
+7. scrape_write: this function will add/update the team event in user's calendar.
+8. scrape_write_comp: this function adds/update competitons in user's calendar.
 '''
 
+## Modules Imported
+## ---------------------------------------------------
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -13,18 +38,15 @@ from datetime import datetime, timedelta
 import pickle
 import os
 import utility_functions as uf
+## ----------------------------------------------------
 
 def enlist_team(team_names):
     '''
-    The function will write the team name/s into the text files.
+    This function will write the team name/s into the text files.
 
     Arguments:
     team_names -- string representing team name/s
-
-    Returns:
-    None
     '''
-    
     team_names = ','.join([str(elem) for elem in team_names])
 
     with open('footy_teams.txt', 'a') as ofile:
@@ -34,13 +56,7 @@ def enlist_team(team_names):
 
 def preview_teams():
     '''
-    The function will display all the added teams.
-
-    Arguments:
-    None
-
-    Returns:
-    None
+    This function will display all the added teams.
     '''
     with open('footy_teams.txt', 'r') as ofile:
         ## opening the file to read the content in it
@@ -57,15 +73,11 @@ def preview_teams():
 
 def del_teams(del_team_names):
     '''
-    The function will delete the team names specified from team name file.
+    This function will delete the team names specified from team name file.
 
     Arguments:
     del_team_names -- string containing team names
-
-    Return:
-    None
     '''
-
     del_team_names = [x.strip() for x in del_team_names]
 
     with open('footy_teams.txt', 'r') as ofile:
@@ -93,9 +105,6 @@ def enlist_comp(comp_name):
 
     Arguments:
     comp_name: list of competition names
-
-    Returns:
-    None
     '''
     
     if 'footy_comps.txt' in  os.listdir():
@@ -156,6 +165,7 @@ def enlist_comp(comp_name):
                         
                 if final_result[0] == ' ':
                     final_result = final_result[1:]
+                ## making the final required result
 
                 with open('footy_comps.txt', 'w') as ofile:
                     ofile.write(final_result)
@@ -171,12 +181,6 @@ def preview_comps():
     '''
     This function displays all the competitions that
     has been saved by the user.
-
-    Arguments:
-    None
-
-    Returns:
-    None
     '''
     with open('footy_comps.txt', 'r') as ofile:
         ## opening text file for reading
@@ -194,9 +198,6 @@ def del_comps(del_comp_names):
 
     Arguments:
     del_comp_names -- string, competition names in required order.
-
-    Returns:
-    None
     '''
 
     iterate_del_names = del_comp_names.split(';')
@@ -279,6 +280,17 @@ def del_comps(del_comp_names):
                     ofile.write(final_result)
 
 def scrape_write(user_name, team_content, month_name, timezone, service, calendar_id):
+    '''
+    This function will add/update the team event in user's calendar.
+
+    Arguments:
+    user_name -- string, user name of the user.
+    team_content -- list, containing team names.
+    month_name -- dict, containing corresponding month values.
+    timezone -- str, timezone of user's area.
+    service -- for running google calendar api functions.
+    calendar_id -- calendar id of the user's calendar.
+    '''
     for team in team_content:
         print(f'For Team {team}')
 
@@ -444,6 +456,19 @@ def scrape_write(user_name, team_content, month_name, timezone, service, calenda
         print()
 
 def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, service, calendar_id, count_c=0):
+    '''
+    This function adds/update competitons in user's calendar.
+
+    Arguments:
+    user_name -- str, user name of the user.
+    comp_name -- list, containing competition name.
+    team_name -- list, containing teams for corresponding competitions.
+    month_name -- dict, corresponding value of each month.
+    timezone -- str, timezone of user's area.
+    service -- for running google calendar api functions.
+    calendar_id -- calendar id of the user's calendar.
+    count_c -- for accessing each competiton's content(teams).
+    '''
     for comp in comp_name:
         print(f'For Competition {comp}')
 
@@ -639,3 +664,5 @@ def scrape_write_comp(user_name, comp_name, team_name, month_name, timezone, ser
                 service.events().insert(calendarId=calendar_id, body=event).execute()
             t_count += 1
         print()
+
+## slothfulwave612

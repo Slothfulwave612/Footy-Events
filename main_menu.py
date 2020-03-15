@@ -1,22 +1,28 @@
 '''
 main_menu.py
 ------------
+This Python module contains the main menu for our Footy-Events projecy, the
+module will be run by the user in order to perform their required task.
 
-This Python module contains the main menu for our program, the
-module will be run by the user in order to perform their required
-task.
-
+Module Imported(3):
+-------------------
+1. os: provides functions for interacting with the operating system.
+2. functions: python module containing all the main functions.
+3. utility_functions: python module containing the helper functions.
 '''
 
+## Module Imported
+## ----------------------------
 import os
 import functions 
 import utility_functions as uf
+## ----------------------------
 
 choice = 0
 
 month_name = {
        'January': 1, 
-       'February': 2,
+       'February': 2, 
        'March': 3,
        'April': 4,
        'May': 5,
@@ -28,9 +34,13 @@ month_name = {
        'November': 11, 
        'December': 12
       }
+## month name and their corresponding value
 
 timezone = 'Asia/Kolkata'
+## time zone set to India
+
 scopes = ['https://www.googleapis.com/auth/calendar']
+## scope for running api functions
 
 while choice != 4:
 
