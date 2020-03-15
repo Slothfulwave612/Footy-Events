@@ -147,7 +147,6 @@ def enlist_comp(comp_name):
                     if team not in team_names:
                         team_names.append(team)
                 ## checking for whether dupicate team has been entered or not
-                print(team_names)
                 team_names = ', '.join(elem for elem in team_names)
                 ## converting list to string
 
@@ -256,13 +255,12 @@ def del_comps(del_comp_names):
                 temp_comp += ': '
                 final_result = ''
             
-                print(del_final)
                 
                 for team in del_final:
                     temp_comp += team + ', '
-                temp_comp = temp_comp[:-4] 
-
+                temp_comp = temp_comp[:-2] 
                 comp_temp = comp_content.split(';')
+                
                 for i in range(len(comp_temp) - 1):
                     if i == count:
                         final_result += ' ' + temp_comp

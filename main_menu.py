@@ -174,7 +174,7 @@ while choice != 4:
 
                     del_comp_names = input('\nEnter competition to be deleted:- ').lower()
                     ## format(to remove teams) -- compitition name: team name1, team name2...
-                    ## format(to remove comp)  -- compitition name: all
+                    ## format(to remove comp)  -- compitition name: del_all
                     ## to remove all competition write del_all
 
                     if del_comp_names == 'del_all':
@@ -199,7 +199,7 @@ while choice != 4:
         print('2. Enter CR if you want to Run Process for competitions.')
         print('3. Enter TCR if you want to Run Process for both teams and competitions.')
         print('4. Enter TU if you want to update selected teams.')
-        print('5. Enter CU if you want to update selected 2competitions.')
+        print('5. Enter CU if you want to update selected competitions.')
         print('6. Enter TCU if you want to update selected teams as well as competitions.')
         print('7. Enter exit if you want to exit out.')
         print('-------------------------------------------------------------------------')
