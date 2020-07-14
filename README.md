@@ -16,7 +16,7 @@
 1. **Python**: 3.7.5 (default, Oct 31 2019, 15:18:51) [MSC v.1916 64 bit (AMD64)]
 2. **requests**: 2.22.0
 3. **bs4**: 4.8.1
-4. **apiclient**: 1.7.11
+4. **apiclient**
 5. **google_auth_oauthlib**: 0.4.1
 6. **pickle**: 4.0
 7. **re**: 2.2.1
@@ -137,6 +137,14 @@
   ![Capture](https://user-images.githubusercontent.com/33928040/76708398-75200780-671c-11ea-85ff-b994890ef357.PNG)
   
   ![Capture](https://user-images.githubusercontent.com/33928040/76708408-92ed6c80-671c-11ea-8a0f-bae031e1d251.PNG)
-
-* **NOTE**: Cannot display further process because due to corona virus outbreak, all the football matches have been postponed and because we don't have any further updates about the dates of the fixtures you just cannot add the event to your calendar. As soon as the dates are listed the furter process images will be inserted. Thank You.
   
+  ![add_1](https://user-images.githubusercontent.com/33928040/87438713-8535ee00-c60d-11ea-9340-c061460575ae.png)
+  
+  ![add_2](https://user-images.githubusercontent.com/33928040/87438721-87984800-c60d-11ea-8313-f422e09e5db0.png)
+  
+  ![add_3](https://user-images.githubusercontent.com/33928040/87438730-88c97500-c60d-11ea-9686-05aa56db58be.png)
+
+* And after the main scrapping process, you will see that the events has been added to your google calendar, this is the screenshot of my google calendar after I ran the program:
+  
+  ![add_4](https://user-images.githubusercontent.com/33928040/87438936-c7f7c600-c60d-11ea-8d9b-ec03c6f1c561.png)
+
